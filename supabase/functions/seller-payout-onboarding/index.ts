@@ -89,8 +89,8 @@ Deno.serve(async (req: Request) => {
       business_contact_mobile: phone,
       country,
       split_type: 'percentage',
-      split_value: 0.9,
-      meta: [{ metaname: 'CrochetHavenShopId', metavalue: shop.id }],
+      split_value: 0.1,
+      meta: [{ meta_name: 'CrochetHavenShopId', meta_value: shop.id }],
     }),
   });
   const created = await createResponse.json().catch(() => null);
