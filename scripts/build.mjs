@@ -1,9 +1,8 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const rootFiles = ['index.html', 'app.js', 'styles.css'];
 const outputDir = new URL('../dist/', import.meta.url);
 
-await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
 
 for (const file of rootFiles) {

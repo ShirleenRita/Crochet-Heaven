@@ -28,6 +28,7 @@ begin
   return new;
 end;
 $$;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
 create trigger on_auth_user_created after insert on auth.users
 for each row execute function public.handle_new_user();
 
@@ -252,11 +253,32 @@ create policy "Marketplace media is public" on storage.objects for select to ano
 create policy "Users upload their own marketplace media" on storage.objects for insert to authenticated with check (bucket_id='marketplace-media' and (storage.foldername(name))[1]=(select auth.uid())::text);
 create policy "Users delete their own marketplace media" on storage.objects for delete to authenticated using (bucket_id='marketplace-media' and (storage.foldername(name))[1]=(select auth.uid())::text);
 
+-- Supabase projects no longer expose new SQL-created tables to the Data API by
+-- default. Grant only the operations the app uses; RLS remains the row boundary.
+grant usage on schema public to anon, authenticated, service_role;
+grant select on public.profiles, public.shops, public.products, public.tutorials,
+  public.reviews, public.community_posts to anon, authenticated;
+grant select on public.orders, public.order_items, public.payments, public.payouts,
+  public.disputes, public.favorites to authenticated;
+
+grant update(display_name, avatar_url, country_code) on public.profiles to authenticated;
+grant insert(owner_id, name, slug, description, country_code, status, shipping_options)
+  on public.shops to authenticated;
+grant insert, update, delete on public.products to authenticated;
+grant insert, update on public.tutorials to authenticated;
+grant insert on public.reviews, public.disputes, public.community_posts to authenticated;
+grant delete on public.community_posts to authenticated;
+grant insert, delete on public.favorites to authenticated;
+grant select, insert, update, delete on public.profiles, public.shops, public.products, public.addresses,
+  public.orders, public.order_items, public.payments, public.payouts, public.tutorials,
+  public.reviews, public.disputes, public.community_posts, public.community_likes,
+  public.favorites to service_role;
+
 -- Only the trusted Edge Function service role may invoke this transaction.
 -- It locks listings, validates stock and creates order/items/payment atomically.
 create or replace function public.create_pending_order(
   p_buyer_id uuid, p_items jsonb, p_shipping_address jsonb, p_commission_bps integer default 1000
-) returns jsonb language plpgsql security definer set search_path=public as $$
+) returns jsonb language plpgsql security definer set search_path='' as $$
 declare
   v_shop_id uuid; v_currency char(3); v_shipping_mode public.shipping_mode;
   v_subtotal bigint; v_shipping bigint; v_fee bigint; v_total bigint;
@@ -283,7 +305,7 @@ begin
   v_fee=floor(v_subtotal*p_commission_bps/10000.0)::bigint; v_total=v_subtotal+v_shipping;
   insert into public.addresses(user_id,full_name,address_line_1,city,postal_code,country_code)
     values(p_buyer_id,p_shipping_address->>'full_name',p_shipping_address->>'address_line_1',p_shipping_address->>'city',p_shipping_address->>'postal_code',p_shipping_address->>'country_code') returning id into v_address_id;
-  insert into public.orders(buyer_id,shop_id,shipping_address_id,status,shipping_fulfillment,currency,subtotal_minor,shipping_minor,platform_fee_minor,total_minor,commission_bps)
+  insert into public.orders(buyer_id,shop_id,shipping_address_id,status,shipping_mode,currency,subtotal_minor,shipping_minor,platform_fee_minor,total_minor,commission_bps)
     values(p_buyer_id,v_shop_id,v_address_id,'pending',v_shipping_mode,v_currency,v_subtotal,v_shipping,v_fee,v_total,p_commission_bps) returning id into v_order_id;
   insert into public.order_items(order_id,product_id,product_title,quantity,unit_price_minor,currency)
     select v_order_id,p.id,p.title,(i->>'quantity')::integer,p.price_minor,p.currency from jsonb_array_elements(p_items) i join public.products p on p.id=(i->>'product_id')::uuid;
@@ -296,7 +318,7 @@ revoke all on function public.create_pending_order(uuid,jsonb,jsonb,integer) fro
 grant execute on function public.create_pending_order(uuid,jsonb,jsonb,integer) to service_role;
 
 create or replace function public.cancel_pending_order(p_order_id uuid) returns void
-language plpgsql security definer set search_path=public as $$
+language plpgsql security definer set search_path='' as $$
 declare v_status public.order_status;
 begin
   select status into v_status from public.orders where id=p_order_id for update;
@@ -309,20 +331,27 @@ revoke all on function public.cancel_pending_order(uuid) from public,anon,authen
 grant execute on function public.cancel_pending_order(uuid) to service_role;
 
 create or replace function public.toggle_post_like(p_post_id uuid) returns integer
-language plpgsql security definer set search_path=public as $$
-declare v_user uuid:=auth.uid(); v_count integer;
+language plpgsql security definer set search_path='' as $$
+declare v_user uuid:=auth.uid(); v_count integer; v_changed integer;
 begin
   if v_user is null then raise exception 'Sign in to react'; end if;
   if exists(select 1 from public.community_likes where post_id=p_post_id and user_id=v_user) then
     delete from public.community_likes where post_id=p_post_id and user_id=v_user;
-    update public.community_posts set likes_count=greatest(0,likes_count-1) where id=p_post_id;
+    get diagnostics v_changed = row_count;
+    if v_changed > 0 then
+      update public.community_posts set likes_count=greatest(0,likes_count-1) where id=p_post_id;
+    end if;
   else
     insert into public.community_likes(post_id,user_id) values(p_post_id,v_user) on conflict do nothing;
-    update public.community_posts set likes_count=likes_count+1 where id=p_post_id;
+    get diagnostics v_changed = row_count;
+    if v_changed > 0 then
+      update public.community_posts set likes_count=likes_count+1 where id=p_post_id;
+    end if;
   end if;
   select likes_count into v_count from public.community_posts where id=p_post_id;
   return v_count;
 end; $$;
+revoke all on function public.toggle_post_like(uuid) from public, anon, authenticated;
 grant execute on function public.toggle_post_like(uuid) to authenticated;
 
 -- No client write policies or grants for orders, order_items, payments, payouts.
