@@ -8,3 +8,6 @@
 .field-label[hidden]{display:none!important}
 
 .backend-status{max-width:1180px;margin:14px auto 0;padding:0 14px;color:#766b59;font-size:10px}.backend-status.needs-setup{padding:11px 14px;background:#eee3cf;border-left:3px solid #c59856}.backend-status.connected{padding:8px 14px;background:#e3eadc;border-left:3px solid #809574}.order-list{display:grid;gap:12px;max-height:55vh;overflow:auto}.order-row{padding:12px;border:1px solid var(--line);background:#fffdfa}.order-row strong,.order-row span,.order-row small{display:block}.order-row strong{font:500 14px var(--serif)}.order-row span,.order-row small{font-size:10px;color:#7b746a;margin-top:4px}.lesson-section .section-heading{flex-wrap:wrap}.lesson-section #teach-lesson{margin-left:auto}.lesson-section .sort-wrap{margin-left:10px}
+
+
+.comment-list{max-height:17rem;overflow:auto;margin:0 0 1rem}.comment-entry{padding:.85rem 0;border-bottom:1px solid var(--line,#e8e1dc)}.comment-entry strong{display:inline-block;margin-right:.6rem}.comment-entry small{color:var(--muted,#827970);font-size:.78rem}.comment-entry p{margin:.4rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
