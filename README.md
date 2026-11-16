@@ -58,4 +58,4 @@ The interface includes English, French, Spanish, Portuguese, German, Italian, Sw
 - Configure an operating process for platform-coordinated shipping, order support, refunds, and disputes.
 - Add admin review screens, order status updates, notification delivery, and end-to-end checks using provider sandbox credentials before going live.
 
-Marketplace listings, favorites, community posts, lesson drafts, orders, and payment events are stored in Supabase. Uploaded images go to the public `marketplace-media` bucket. Public image URLs must never contain private customer documents.
+Marketplace listings, favorites, community posts and comments, lesson drafts, orders, and payment events are stored in Supabase. Uploaded images go to the public `marketplace-media` bucket. Public image URLs must never contain private customer documents.
