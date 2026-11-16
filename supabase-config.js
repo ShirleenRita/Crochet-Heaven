@@ -1,4 +1,3 @@
-// Add the public Supabase project URL and publishable key from Project Settings.
-// Never put a service-role key or payment secret in this browser file.
-export const SUPABASE_URL = '';
-export const SUPABASE_PUBLISHABLE_KEY = '';
+// Public project URL and publishable key. Never place service-role or payment secrets here.
+export const SUPABASE_URL = 'https://wkvbeugvkfubmbfotodt.supabase.co';
+export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_GXtiheEp4JYfuQrPhwyW5g_dz6ldo19';
