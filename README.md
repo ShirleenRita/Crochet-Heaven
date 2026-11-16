@@ -14,6 +14,15 @@ Open `http://localhost:8000`. Add your Supabase project URL and **publishable** 
 
 Without the project configuration, the site shows a setup message and does not create accounts, listings, posts, or orders.
 
+## Deploy on Vercel
+
+The included `vercel.json` builds the static site into `dist`. Connect this GitHub repository to a Vercel project once; Vercel will build and deploy every future push automatically. Set these two Vercel project environment variables before the first live deployment:
+
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+
+The publishable key is intended for browser use; database access is protected by Supabase row-level security. Never add the Supabase service-role key or Flutterwave secrets to Vercel's public browser build. The site can render before Supabase is configured, but registration, listings, uploads, community posts, and checkout remain unavailable until these values point to the prepared Supabase project.
+
 ## Create the Supabase backend
 
 1. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) once in its SQL editor.
