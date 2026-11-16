@@ -1,0 +1,7 @@
+project_id = "crochet-haven"
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.flutterwave-webhook]
+verify_jwt = false

@@ -1,0 +1,9 @@
+# Local and secret configuration
+supabase/.temp/
+supabase/functions/.env
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+*.log
