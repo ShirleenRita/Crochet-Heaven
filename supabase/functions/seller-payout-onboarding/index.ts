@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
       business_contact_mobile: phone,
       country,
       split_type: 'percentage',
-      split_value: 0.1,
+      split_value: 0.9,
       meta: [{ meta_name: 'CrochetHavenShopId', meta_value: shop.id }],
     }),
   });
