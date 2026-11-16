@@ -16,22 +16,26 @@ Without the project configuration, the site shows a setup message and does not c
 
 ## Deploy on Vercel
 
-The included `vercel.json` builds the static site into `dist`. Connect this GitHub repository to a Vercel project once; Vercel will build and deploy every future push automatically. Set these two Vercel project environment variables before the first live deployment:
+The included `vercel.json` builds the static site into `dist`. This repository is connected to Vercel, so pushes to `main` trigger a deployment automatically.
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
+The frontend project URL and Supabase **publishable** key are configured in `supabase-config.js`. The key is intended for browser use. The build also accepts optional Vercel environment overrides named `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`, but they are not required for this repository’s current configuration. Never put a Supabase service-role key or Flutterwave secret in the browser build.
 
-The publishable key is intended for browser use; database access is protected by Supabase row-level security. Never add the Supabase service-role key or Flutterwave secrets to Vercel's public browser build. The site can render before Supabase is configured, but registration, listings, uploads, community posts, and checkout remain unavailable until these values point to the prepared Supabase project.
+A successful Vercel build does not apply the database schema or deploy Edge Functions. Complete the Supabase setup below before enabling accounts, uploads, listings, or checkout.
 
 ## Create the Supabase backend
 
-1. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) once in its SQL editor.
-2. In Authentication settings, enable email sign-up and configure the site URL and allowed redirect URLs. Enable Google and Apple providers if you want those options.
-3. Set up the project’s mail delivery before opening registrations to the public. Supabase’s default email service has limits.
-4. Add `SUPABASE_URL` and the publishable key to `supabase-config.js`.
-5. Install the Supabase CLI, link this folder to the project, and deploy the two Edge Functions using the official Supabase CLI workflow.
-6. Set Edge Function secrets: `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `PUBLIC_SITE_URL`. Supabase supplies `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions. Keep the Flutterwave and service-role secrets there only.
-7. Configure Flutterwave’s webhook URL to the deployed `flutterwave-webhook` function and set the same webhook secret hash in the Flutterwave dashboard.
+1. Open the connected project `wkvbeugvkfubmbfotodt` in Supabase and run [`supabase/schema.sql`](supabase/schema.sql) once in **SQL Editor**. It creates the database tables, row-level security policies, and public `marketplace-media` image bucket.
+2. In Authentication settings, set the site URL to `https://crochet-heaven-git-main-shirleen1.vercel.app` and add that domain to allowed redirect URLs. Enable email sign-up. Add Google or Apple OAuth credentials only if you intend to offer those providers.
+3. Configure production email delivery before opening registration to the public. Supabase’s default email service has limits.
+4. Install the Supabase CLI and authenticate, then deploy the Edge Functions:
+   ```sh
+   supabase login
+   supabase link --project-ref wkvbeugvkfubmbfotodt
+   supabase functions deploy create-checkout --project-ref wkvbeugvkfubmbfotodt --yes
+   supabase functions deploy flutterwave-webhook --project-ref wkvbeugvkfubmbfotodt --no-verify-jwt --yes
+   ```
+5. Set `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `PUBLIC_SITE_URL=https://crochet-heaven-git-main-shirleen1.vercel.app` as Supabase Edge Function secrets. Supabase provides its project URL, anon key, and service-role key to Edge Functions. Never commit or expose the Flutterwave or service-role secrets.
+6. In Flutterwave, set the webhook URL to `https://wkvbeugvkfubmbfotodt.supabase.co/functions/v1/flutterwave-webhook` and use the same webhook secret hash as `FLW_WEBHOOK_HASH`.
 
 The Flutterwave webhook function must be reachable without a Supabase JWT. Its handler validates Flutterwave’s `verif-hash` header and verifies each transaction with Flutterwave before marking an order paid. Do not remove either check.
 
