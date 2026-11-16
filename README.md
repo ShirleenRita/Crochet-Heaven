@@ -32,9 +32,10 @@ A successful Vercel build does not apply the database schema or deploy Edge Func
    supabase login
    supabase link --project-ref wkvbeugvkfubmbfotodt
    supabase functions deploy create-checkout --project-ref wkvbeugvkfubmbfotodt --yes
+   supabase functions deploy seller-payout-onboarding --project-ref wkvbeugvkfubmbfotodt --yes
    supabase functions deploy flutterwave-webhook --project-ref wkvbeugvkfubmbfotodt --no-verify-jwt --yes
    ```
-5. Set `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `PUBLIC_SITE_URL=https://crochet-heaven-git-main-shirleen1.vercel.app` as Supabase Edge Function secrets. Supabase provides its project URL, anon key, and service-role key to Edge Functions. Never commit or expose the Flutterwave or service-role secrets.
+5. Set `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `PUBLIC_SITE_URL=https://crochet-heaven-git-main-shirleen1.vercel.app` as Supabase Edge Function secrets. The first secret is also required by seller payout onboarding. Supabase provides its project URL, anon key, and service-role key to Edge Functions. Never commit or expose the Flutterwave or service-role secrets.
 6. In Flutterwave, set the webhook URL to `https://wkvbeugvkfubmbfotodt.supabase.co/functions/v1/flutterwave-webhook` and use the same webhook secret hash as `FLW_WEBHOOK_HASH`.
 
 The Flutterwave webhook function must be reachable without a Supabase JWT. Its handler validates Flutterwave’s `verif-hash` header and verifies each transaction with Flutterwave before marking an order paid. Do not remove either check.
