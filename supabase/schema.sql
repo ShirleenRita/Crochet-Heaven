@@ -221,6 +221,14 @@ create table public.community_likes (
   created_at timestamptz not null default now(),
   primary key(post_id,user_id)
 );
+create table public.community_comments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.community_posts(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  body text not null check (char_length(btrim(body)) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+create index community_comments_post_recent_idx on public.community_comments(post_id,created_at);
 create table public.favorites (
   user_id uuid not null references public.profiles(id) on delete cascade,
   product_id uuid not null references public.products(id) on delete cascade,
@@ -230,6 +238,7 @@ create table public.favorites (
 alter table public.products add column if not exists shipping_minor bigint not null default 0 check (shipping_minor >= 0);
 alter table public.community_posts enable row level security;
 alter table public.community_likes enable row level security;
+alter table public.community_comments enable row level security;
 alter table public.favorites enable row level security;
 create policy "Published community posts are public" on public.community_posts for select to anon, authenticated using (is_published or user_id=(select auth.uid()));
 create policy "Users publish their own posts" on public.community_posts for insert to authenticated with check (user_id=(select auth.uid()));
@@ -237,6 +246,8 @@ create policy "Users manage their own posts" on public.community_posts for delet
 create policy "Likes are public" on public.community_likes for select to anon, authenticated using (true);
 create policy "Users add their own likes" on public.community_likes for insert to authenticated with check (user_id=(select auth.uid()));
 create policy "Users remove their own likes" on public.community_likes for delete to authenticated using (user_id=(select auth.uid()));
+create policy "Public read comments on published posts" on public.community_comments for select to anon, authenticated using (exists(select 1 from public.community_posts p where p.id=post_id and p.is_published));
+create policy "Signed-in users comment on published posts" on public.community_comments for insert to authenticated with check (user_id=(select auth.uid()) and exists(select 1 from public.community_posts p where p.id=post_id and p.is_published));
 create policy "Users read their own favorites" on public.favorites for select to authenticated using (user_id=(select auth.uid()));
 create policy "Users save their own favorites" on public.favorites for insert to authenticated with check (user_id=(select auth.uid()));
 create policy "Users remove their own favorites" on public.favorites for delete to authenticated using (user_id=(select auth.uid()));
@@ -257,7 +268,7 @@ create policy "Users delete their own marketplace media" on storage.objects for 
 -- default. Grant only the operations the app uses; RLS remains the row boundary.
 grant usage on schema public to anon, authenticated, service_role;
 grant select on public.profiles, public.shops, public.products, public.tutorials,
-  public.reviews, public.community_posts to anon, authenticated;
+  public.reviews, public.community_posts, public.community_comments to anon, authenticated;
 grant select on public.orders, public.order_items, public.payments, public.payouts,
   public.disputes, public.favorites to authenticated;
 
@@ -266,13 +277,13 @@ grant insert(owner_id, name, slug, description, country_code, status, shipping_o
   on public.shops to authenticated;
 grant insert, update, delete on public.products to authenticated;
 grant insert, update on public.tutorials to authenticated;
-grant insert on public.reviews, public.disputes, public.community_posts to authenticated;
+grant insert on public.reviews, public.disputes, public.community_posts, public.community_comments to authenticated;
 grant delete on public.community_posts to authenticated;
 grant insert, delete on public.favorites to authenticated;
 grant select, insert, update, delete on public.profiles, public.shops, public.products, public.addresses,
   public.orders, public.order_items, public.payments, public.payouts, public.tutorials,
   public.reviews, public.disputes, public.community_posts, public.community_likes,
-  public.favorites to service_role;
+  public.favorites, public.community_comments to service_role;
 
 -- Only the trusted Edge Function service role may invoke this transaction.
 -- It locks listings, validates stock and creates order/items/payment atomically.
