@@ -386,3 +386,4 @@ create index if not exists payouts_order_id_idx on public.payouts(order_id);
 create index if not exists reviews_buyer_id_idx on public.reviews(buyer_id);
 create index if not exists reviews_product_id_idx on public.reviews(product_id);
 create index if not exists tutorials_teacher_id_idx on public.tutorials(teacher_id);
+create index if not exists community_comments_user_id_idx on public.community_comments(user_id);
