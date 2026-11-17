@@ -268,7 +268,7 @@ create policy "Users delete their own marketplace media" on storage.objects for 
 -- default. Grant only the operations the app uses; RLS remains the row boundary.
 grant usage on schema public to anon, authenticated, service_role;
 grant select on public.profiles, public.shops, public.products, public.tutorials,
-  public.reviews, public.community_posts, public.community_comments to anon, authenticated;
+  public.reviews, public.community_posts, public.community_likes, public.community_comments to anon, authenticated;
 grant select on public.orders, public.order_items, public.payments, public.payouts,
   public.disputes, public.favorites to authenticated;
 
@@ -295,12 +295,14 @@ declare
   v_subtotal bigint; v_shipping bigint; v_fee bigint; v_total bigint;
   v_address_id uuid; v_order_id uuid; v_payment_id uuid;
 begin
-  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items)=0 then raise exception 'Cart is empty'; end if;
+  if coalesce(jsonb_typeof(p_items), '') <> 'array' then raise exception 'Cart must be a JSON array'; end if;
+  if jsonb_array_length(p_items)=0 then raise exception 'Cart is empty'; end if;
   if p_commission_bps <> 1000 then raise exception 'Unexpected commission'; end if;
   perform p.id from public.products p join public.shops s on s.id=p.shop_id
    where p.id in (select (x->>'product_id')::uuid from jsonb_array_elements(p_items) x)
    order by p.id for update of p;
   if (select count(*) from jsonb_array_elements(p_items)) <> (select count(distinct x->>'product_id') from jsonb_array_elements(p_items) x) then raise exception 'Duplicate cart item'; end if;
+  if (select count(*) from jsonb_array_elements(p_items)) <> (select count(*) from jsonb_array_elements(p_items) i join public.products p on p.id=(i->>'product_id')::uuid) then raise exception 'Cart contains an unknown product'; end if;
   select p.shop_id,p.currency,min(p.shipping_mode::text)::public.shipping_mode
     into v_shop_id,v_currency,v_shipping_mode
     from jsonb_array_elements(p_items) i
