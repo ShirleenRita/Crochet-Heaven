@@ -369,3 +369,20 @@ grant execute on function public.toggle_post_like(uuid) to authenticated;
 -- Configure an admin-only server function to review shops. Verify provider
 -- webhook signatures, idempotency keys, order totals, stock and seller eligibility
 -- before any production payment is enabled. Never expose the service-role key.
+
+
+-- Marketplace foreign-key indexes (also maintained by incremental migrations).
+create index if not exists addresses_user_id_idx on public.addresses(user_id);
+create index if not exists community_likes_user_id_idx on public.community_likes(user_id);
+create index if not exists community_posts_user_id_idx on public.community_posts(user_id);
+create index if not exists disputes_opened_by_idx on public.disputes(opened_by);
+create index if not exists disputes_order_id_idx on public.disputes(order_id);
+create index if not exists favorites_product_id_idx on public.favorites(product_id);
+create index if not exists order_items_order_id_idx on public.order_items(order_id);
+create index if not exists order_items_product_id_idx on public.order_items(product_id);
+create index if not exists orders_shipping_address_id_idx on public.orders(shipping_address_id);
+create index if not exists payments_order_id_idx on public.payments(order_id);
+create index if not exists payouts_order_id_idx on public.payouts(order_id);
+create index if not exists reviews_buyer_id_idx on public.reviews(buyer_id);
+create index if not exists reviews_product_id_idx on public.reviews(product_id);
+create index if not exists tutorials_teacher_id_idx on public.tutorials(teacher_id);
